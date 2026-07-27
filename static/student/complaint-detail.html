@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Complaint Detail — Hostel Feedback System</title>
+  <link rel="stylesheet" href="/css/main.css"/>
+  <style>
+    :root{--primary:#0d9488;--sidebar-bg:#134e4a;--sidebar-text:#f0fdfa;}
+    .detail-row { display:flex; gap:2rem; margin-bottom:.75rem; flex-wrap:wrap; }
+    .detail-label { font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); margin-bottom:.2rem; }
+    .detail-value { font-weight:500; }
+    .warden-notes { background:var(--warden-light,#eef2ff); border-left:4px solid #4f46e5; padding:.75rem 1rem; border-radius:0 var(--radius) var(--radius) 0; margin-top:1rem; }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-logo">🏠 Hostel HFS <span>Student Portal</span></div>
+      <nav class="sidebar-nav">
+        <a href="/student/dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+        <a href="/student/new-complaint.html" class="nav-item"><span class="nav-icon">✏️</span> New Complaint</a>
+        <a href="/student/complaints.html" class="nav-item"><span class="nav-icon">📋</span> My Complaints</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="btn btn-ghost w-full" id="logout-btn" style="color:rgba(240,253,250,.7);">⬅ Logout</button>
+      </div>
+    </aside>
+    <div class="main-content">
+      <div class="topbar">
+        <a href="/student/complaints.html" style="color:var(--text-muted);font-size:.9rem;">← Back to complaints</a>
+      </div>
+      <div class="page-content">
+        <div style="max-width:640px" id="complaint-container">
+          <div style="padding:2rem;text-align:center"><span class="spinner spinner-dark"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    async function init() {
+      const user = await requireStudent();
+      if (!user) return;
+
+      const id = new URLSearchParams(location.search).get("id");
+      if (!id) { window.location.href = "/student/complaints.html"; return; }
+
+      try {
+        const c = await API.get(`/api/complaints/${id}`);
+        render(c);
+      } catch (err) {
+        document.getElementById("complaint-container").innerHTML =
+          `<div class="alert alert-error">${err.message}</div>`;
+      }
+    }
+
+    function render(c) {
+      document.getElementById("complaint-container").innerHTML = `
+        <div class="card">
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Complaint #${c.id}</span>
+            ${statusBadge(c.status)}
+          </div>
+          <div class="card-body">
+            <div class="detail-row">
+              <div><div class="detail-label">Category</div><div class="detail-value">${c.category}</div></div>
+              <div><div class="detail-label">Submitted</div><div class="detail-value">${formatDate(c.created_at)}</div></div>
+              <div><div class="detail-label">Last Updated</div><div class="detail-value">${formatDate(c.updated_at)}</div></div>
+            </div>
+            <div style="margin-top:1rem;">
+              <div class="detail-label">Description</div>
+              <p style="margin-top:.35rem;line-height:1.7;">${c.description}</p>
+            </div>
+            ${c.warden_notes ? `
+              <div class="warden-notes">
+                <div class="detail-label" style="color:#4f46e5">Warden's Notes</div>
+                <p style="margin-top:.35rem;">${c.warden_notes}</p>
+              </div>` : ""}
+          </div>
+        </div>`;
+    }
+
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      await API.post("/api/auth/logout");
+      window.location.href = "/student/login.html";
+    });
+
+    init();
+  </script>
+</body>
+</html>

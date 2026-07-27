@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Dashboard — Hostel Feedback System</title>
+  <link rel="stylesheet" href="/css/main.css"/>
+  <style>
+    :root {
+      --primary: #0d9488;
+      --sidebar-bg: #134e4a;
+      --sidebar-text: #f0fdfa;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">🏠 Hostel HFS <span>Student Portal</span></div>
+      <nav class="sidebar-nav">
+        <a href="/student/dashboard.html" class="nav-item active"><span class="nav-icon">📊</span> Dashboard</a>
+        <a href="/student/new-complaint.html" class="nav-item"><span class="nav-icon">✏️</span> New Complaint</a>
+        <a href="/student/complaints.html" class="nav-item"><span class="nav-icon">📋</span> My Complaints</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="btn btn-ghost w-full" id="logout-btn" style="color:rgba(240,253,250,.7);">⬅ Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="main-content">
+      <div class="topbar">
+        <span style="font-weight:600;">Dashboard</span>
+        <span id="user-info" class="text-sm text-muted"></span>
+      </div>
+      <div class="page-content">
+        <div id="alert-area"></div>
+
+        <!-- Stats -->
+        <div class="stats-grid mb-4" id="stats-grid">
+          <div class="stat-card"><div class="value" id="stat-total">…</div><div class="label">Total Complaints</div></div>
+          <div class="stat-card"><div class="value" id="stat-pending" style="color:var(--warning)">…</div><div class="label">Pending</div></div>
+          <div class="stat-card"><div class="value" id="stat-progress" style="color:#3b82f6">…</div><div class="label">In Progress</div></div>
+          <div class="stat-card"><div class="value" id="stat-resolved" style="color:var(--success)">…</div><div class="label">Resolved</div></div>
+        </div>
+
+        <!-- Recent complaints -->
+        <div class="card">
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Recent Complaints</span>
+            <a href="/student/new-complaint.html" class="btn btn-sm btn-primary" style="background:var(--student-primary)">+ New</a>
+          </div>
+          <div id="complaints-body">
+            <div style="padding:2rem;text-align:center"><span class="spinner spinner-dark"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    let user;
+
+    async function init() {
+      user = await requireStudent();
+      if (!user) return;
+      document.getElementById("user-info").textContent = `${user.name} · ${user.usn} · Room ${user.room_number}`;
+      loadData();
+    }
+
+    async function loadData() {
+      try {
+        const data = await API.get("/api/complaints?limit=10");
+        const complaints = data.complaints;
+
+        // Stats
+        const total    = data.total;
+        const pending  = complaints.filter(c => c.status === "Pending").length;
+        const progress = complaints.filter(c => c.status === "In Progress").length;
+        const resolved = complaints.filter(c => c.status === "Resolved").length;
+
+        // Fetch full counts
+        const [pend, prog, res] = await Promise.all([
+          API.get("/api/complaints?status=Pending&limit=1"),
+          API.get("/api/complaints?status=In+Progress&limit=1"),
+          API.get("/api/complaints?status=Resolved&limit=1"),
+        ]);
+
+        document.getElementById("stat-total").textContent    = data.total;
+        document.getElementById("stat-pending").textContent  = pend.total;
+        document.getElementById("stat-progress").textContent = prog.total;
+        document.getElementById("stat-resolved").textContent = res.total;
+
+        renderComplaints(complaints);
+      } catch (err) {
+        showAlert(document.getElementById("alert-area"), err.message);
+      }
+    }
+
+    function renderComplaints(list) {
+      const el = document.getElementById("complaints-body");
+      if (!list.length) {
+        el.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>No complaints yet</p><a href="/student/new-complaint.html" class="btn btn-primary" style="background:var(--student-primary)">Submit your first complaint</a></div>`;
+        return;
+      }
+      el.innerHTML = `
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>#</th><th>Category</th><th>Description</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody>
+              ${list.map(c => `
+                <tr class="clickable-row" onclick="window.location.href='/student/complaint-detail.html?id=${c.id}'">
+                  <td>${c.id}</td>
+                  <td>${c.category}</td>
+                  <td class="truncate" style="max-width:200px">${c.description}</td>
+                  <td>${statusBadge(c.status)}</td>
+                  <td class="text-sm text-muted">${formatDate(c.created_at)}</td>
+                </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>`;
+    }
+
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      await API.post("/api/auth/logout");
+      window.location.href = "/student/login.html";
+    });
+
+    init();
+  </script>
+</body>
+</html>

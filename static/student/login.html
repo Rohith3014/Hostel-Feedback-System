@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Login — Hostel Feedback System</title>
+  <link rel="stylesheet" href="/css/main.css"/>
+  <style>
+    :root { --primary: #0d9488; }
+    body { background: var(--student-light); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1rem; }
+    .auth-box { background: #fff; border: 1px solid var(--border); border-radius: .75rem; padding: 2rem; width: 100%; max-width: 400px; box-shadow: var(--shadow-md); }
+    .auth-logo { text-align: center; margin-bottom: 1.5rem; }
+    .auth-logo .icon { font-size: 2.5rem; }
+    .auth-logo h1 { font-size: 1.4rem; font-weight: 700; margin-top: .4rem; }
+    .auth-logo p  { font-size: .85rem; color: var(--text-muted); }
+    .auth-footer  { text-align: center; margin-top: 1rem; font-size: .875rem; color: var(--text-muted); }
+    .auth-footer a { color: var(--student-primary); font-weight: 500; }
+    .back-link { display: inline-flex; align-items: center; gap: .3rem; color: var(--text-muted); font-size: .85rem; margin-bottom: 1rem; }
+    .back-link:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <div style="width:100%;max-width:400px">
+    <a href="/" class="back-link">← Back to home</a>
+    <div class="auth-box">
+      <div class="auth-logo">
+        <div class="icon">🎓</div>
+        <h1>Student Login</h1>
+        <p>Sign in with your USN and password</p>
+      </div>
+
+      <div id="alert-area"></div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label for="usn">USN</label>
+          <input type="text" id="usn" placeholder="e.g. 1IC25AI065" required autocomplete="username"/>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Your password" required autocomplete="current-password"/>
+        </div>
+        <button type="submit" class="btn btn-primary w-full btn-lg" id="submit-btn" style="background:var(--student-primary)">
+          Sign In
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        Don't have an account? <a href="/student/register.html">Register here</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    // Redirect if already logged in
+    API.get("/api/auth/me").then(() => window.location.href = "/student/dashboard.html").catch(() => {});
+
+    document.getElementById("login-form").addEventListener("submit", async e => {
+      e.preventDefault();
+      const btn = document.getElementById("submit-btn");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Signing in…';
+
+      try {
+        await API.post("/api/auth/login", {
+          usn:      document.getElementById("usn").value.trim(),
+          password: document.getElementById("password").value,
+        });
+        window.location.href = "/student/dashboard.html";
+      } catch (err) {
+        showAlert(document.getElementById("alert-area"), err.message);
+        btn.disabled = false;
+        btn.textContent = "Sign In";
+      }
+    });
+  </script>
+</body>
+</html>

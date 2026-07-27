@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Students — Warden Portal</title>
+  <link rel="stylesheet" href="/css/main.css"/>
+  <style>:root{--primary:#4f46e5;--sidebar-bg:#1e1b4b;--sidebar-text:#e0e7ff;}</style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-logo">🏠 Hostel HFS <span>Warden Portal</span></div>
+      <nav class="sidebar-nav">
+        <a href="/warden/dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+        <a href="/warden/complaints.html" class="nav-item"><span class="nav-icon">📋</span> Complaints</a>
+        <a href="/warden/students.html" class="nav-item active"><span class="nav-icon">🎓</span> Students</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="btn btn-ghost w-full" id="logout-btn" style="color:rgba(224,231,255,.7);">⬅ Logout</button>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <div class="topbar">
+        <span style="font-weight:600;">Registered Students</span>
+        <span id="total-label" class="text-sm text-muted"></span>
+      </div>
+      <div class="page-content">
+        <div id="alert-area"></div>
+        <div class="filter-bar">
+          <input type="search" id="search-input" placeholder="Search by name, USN, email, room…" style="min-width:260px"/>
+        </div>
+        <div class="card">
+          <div id="students-body">
+            <div style="padding:2rem;text-align:center"><span class="spinner spinner-dark"></span></div>
+          </div>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    let page = 1, searchTimer;
+
+    async function init() {
+      const user = await requireAdmin();
+      if (!user) return;
+      load();
+    }
+
+    async function load() {
+      const search = document.getElementById("search-input").value.trim();
+      const params = new URLSearchParams({ page, limit: 20 });
+      if (search) params.set("search", search);
+
+      try {
+        const data = await API.get("/api/students?" + params);
+        document.getElementById("total-label").textContent = `${data.total} student${data.total !== 1 ? "s" : ""}`;
+        renderTable(data);
+      } catch (err) {
+        showAlert(document.getElementById("alert-area"), err.message);
+      }
+    }
+
+    function renderTable(data) {
+      const el = document.getElementById("students-body");
+      if (!data.students.length) {
+        el.innerHTML = `<div class="empty-state"><div class="icon">🎓</div><p>No students found</p></div>`;
+        document.getElementById("pagination").innerHTML = "";
+        return;
+      }
+      el.innerHTML = `
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>#</th><th>Name</th><th>USN</th><th>Room</th><th>Email</th><th>Phone</th><th>Registered</th></tr></thead>
+            <tbody>
+              ${data.students.map((s,i) => `
+                <tr>
+                  <td>${(page-1)*20 + i + 1}</td>
+                  <td><strong>${s.name}</strong></td>
+                  <td>${s.usn}</td>
+                  <td>${s.room_number}</td>
+                  <td><a href="mailto:${s.email}" style="color:#4f46e5">${s.email}</a></td>
+                  <td>${s.phone || "—"}</td>
+                  <td class="text-sm text-muted">${formatDate(s.created_at)}</td>
+                </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>`;
+
+      const pages = Math.ceil(data.total / data.limit);
+      const pg = document.getElementById("pagination");
+      if (pages <= 1) { pg.innerHTML = ""; return; }
+      pg.innerHTML = `
+        <button class="btn btn-sm btn-secondary" ${page<=1?"disabled":""} onclick="changePage(${page-1})">← Prev</button>
+        <span class="page-info">Page ${page} of ${pages}</span>
+        <button class="btn btn-sm btn-secondary" ${page>=pages?"disabled":""} onclick="changePage(${page+1})">Next →</button>`;
+    }
+
+    function changePage(p) { page = p; load(); }
+
+    document.getElementById("search-input").addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => { page = 1; load(); }, 350);
+    });
+
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      await API.post("/api/auth/admin/logout");
+      window.location.href = "/warden/login.html";
+    });
+
+    init();
+  </script>
+</body>
+</html>

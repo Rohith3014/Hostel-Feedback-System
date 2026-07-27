@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Warden Dashboard — Hostel Feedback System</title>
+  <link rel="stylesheet" href="/css/main.css"/>
+  <style>:root{--primary:#4f46e5;--sidebar-bg:#1e1b4b;--sidebar-text:#e0e7ff;}</style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-logo">🏠 Hostel HFS <span>Warden Portal</span></div>
+      <nav class="sidebar-nav">
+        <a href="/warden/dashboard.html" class="nav-item active"><span class="nav-icon">📊</span> Dashboard</a>
+        <a href="/warden/complaints.html" class="nav-item"><span class="nav-icon">📋</span> Complaints</a>
+        <a href="/warden/students.html" class="nav-item"><span class="nav-icon">🎓</span> Students</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="btn btn-ghost w-full" id="logout-btn" style="color:rgba(224,231,255,.7);">⬅ Logout</button>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <div class="topbar">
+        <span style="font-weight:600;">Dashboard</span>
+        <span id="user-info" class="text-sm text-muted"></span>
+      </div>
+      <div class="page-content">
+        <div id="alert-area"></div>
+
+        <div class="stats-grid mb-4">
+          <div class="stat-card"><div class="value" id="s-students">…</div><div class="label">Total Students</div></div>
+          <div class="stat-card"><div class="value" id="s-total">…</div><div class="label">Total Complaints</div></div>
+          <div class="stat-card"><div class="value" id="s-pending" style="color:var(--warning)">…</div><div class="label">Pending</div></div>
+          <div class="stat-card"><div class="value" id="s-progress" style="color:#3b82f6">…</div><div class="label">In Progress</div></div>
+          <div class="stat-card"><div class="value" id="s-resolved" style="color:var(--success)">…</div><div class="label">Resolved</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Recent Complaints</span>
+            <a href="/warden/complaints.html" class="btn btn-sm btn-secondary">View All</a>
+          </div>
+          <div id="recent-body">
+            <div style="padding:2rem;text-align:center"><span class="spinner spinner-dark"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    async function init() {
+      const user = await requireAdmin();
+      if (!user) return;
+      document.getElementById("user-info").textContent = `Welcome, ${user.username}`;
+
+      try {
+        const stats = await API.get("/api/dashboard/stats");
+        document.getElementById("s-students").textContent = stats.total_students;
+        document.getElementById("s-total").textContent    = stats.total_complaints;
+        document.getElementById("s-pending").textContent  = stats.pending;
+        document.getElementById("s-progress").textContent = stats.in_progress;
+        document.getElementById("s-resolved").textContent = stats.resolved;
+
+        const el = document.getElementById("recent-body");
+        if (!stats.recent_complaints.length) {
+          el.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>No complaints yet</p></div>`;
+          return;
+        }
+        el.innerHTML = `
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>#</th><th>Student</th><th>Room</th><th>Category</th><th>Status</th><th>Date</th></tr></thead>
+              <tbody>
+                ${stats.recent_complaints.map(c => `
+                  <tr class="clickable-row" onclick="location.href='/warden/complaint-detail.html?id=${c.id}'">
+                    <td>${c.id}</td>
+                    <td>${c.student_name}</td>
+                    <td>${c.room_number}</td>
+                    <td>${c.category}</td>
+                    <td>${statusBadge(c.status)}</td>
+                    <td class="text-sm text-muted">${formatDate(c.created_at)}</td>
+                  </tr>`).join("")}
+              </tbody>
+            </table>
+          </div>`;
+      } catch (err) {
+        showAlert(document.getElementById("alert-area"), err.message);
+      }
+    }
+
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      await API.post("/api/auth/admin/logout");
+      window.location.href = "/warden/login.html";
+    });
+
+    init();
+  </script>
+</body>
+</html>

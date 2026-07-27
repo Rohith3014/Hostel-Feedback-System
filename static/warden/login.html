@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Warden Login — Hostel Feedback System</title>
+  <link rel="stylesheet" href="/css/main.css"/>
+  <style>
+    :root { --primary: #4f46e5; }
+    body { background: linear-gradient(135deg,#1e1b4b 0%,#312e81 100%); display:flex; align-items:center; justify-content:center; min-height:100vh; padding:1rem; }
+    .auth-box { background:#fff; border-radius:.75rem; padding:2rem; width:100%; max-width:400px; box-shadow:0 20px 60px rgba(0,0,0,.4); }
+    .auth-logo { text-align:center; margin-bottom:1.5rem; }
+    .auth-logo .icon { font-size:2.5rem; }
+    .auth-logo h1 { font-size:1.4rem; font-weight:700; margin-top:.4rem; }
+    .auth-logo p { font-size:.85rem; color:var(--text-muted); }
+    .auth-footer { text-align:center; margin-top:1rem; font-size:.875rem; }
+    .auth-footer a { color:#4f46e5; font-weight:500; }
+    .back-link { display:inline-flex; align-items:center; gap:.3rem; color:rgba(255,255,255,.6); font-size:.85rem; margin-bottom:1rem; }
+    .back-link:hover { color:#fff; }
+  </style>
+</head>
+<body>
+  <div style="width:100%;max-width:400px">
+    <a href="/" class="back-link">← Back to home</a>
+    <div class="auth-box">
+      <div class="auth-logo">
+        <div class="icon">🛡️</div>
+        <h1>Warden Login</h1>
+        <p>Sign in with your admin credentials</p>
+      </div>
+      <div id="alert-area"></div>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" placeholder="admin" required autocomplete="username"/>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Your password" required autocomplete="current-password"/>
+        </div>
+        <button type="submit" class="btn btn-primary w-full btn-lg" id="submit-btn" style="background:#4f46e5">
+          Sign In
+        </button>
+      </form>
+      <div class="auth-footer" style="color:var(--text-muted);margin-top:.75rem;font-size:.8rem;">
+        Default: <strong>admin</strong> / <strong>admin123</strong>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    API.get("/api/auth/admin/me").then(() => window.location.href = "/warden/dashboard.html").catch(() => {});
+
+    document.getElementById("login-form").addEventListener("submit", async e => {
+      e.preventDefault();
+      const btn = document.getElementById("submit-btn");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Signing in…';
+      try {
+        await API.post("/api/auth/admin/login", {
+          username: document.getElementById("username").value.trim(),
+          password: document.getElementById("password").value,
+        });
+        window.location.href = "/warden/dashboard.html";
+      } catch (err) {
+        showAlert(document.getElementById("alert-area"), err.message);
+        btn.disabled = false;
+        btn.textContent = "Sign In";
+      }
+    });
+  </script>
+</body>
+</html>

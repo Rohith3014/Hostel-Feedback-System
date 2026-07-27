@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hostel Feedback System</title>
+  <link rel="stylesheet" href="/css/main.css"/>
+  <style>
+    :root { --primary: #0d9488; }
+    body { background: linear-gradient(135deg, #0f766e 0%, #4f46e5 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    .hero { text-align: center; color: #fff; max-width: 560px; width: 100%; }
+    .hero h1 { font-size: 2.4rem; font-weight: 800; letter-spacing: -.03em; margin-bottom: .5rem; }
+    .hero p  { font-size: 1.1rem; opacity: .85; margin-bottom: 2.5rem; }
+    .portal-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .portal-card {
+      background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+      border-radius: .75rem; padding: 1.75rem 1.25rem; cursor: pointer;
+      transition: background .2s, transform .15s; text-decoration: none; color: #fff;
+      display: flex; flex-direction: column; align-items: center; gap: .75rem;
+    }
+    .portal-card:hover { background: rgba(255,255,255,.2); transform: translateY(-2px); }
+    .portal-card .icon { font-size: 2.4rem; }
+    .portal-card h2   { font-size: 1.1rem; font-weight: 700; }
+    .portal-card p    { font-size: .85rem; opacity: .75; }
+    .badge-label { font-size: .7rem; background: rgba(255,255,255,.25); padding: .15rem .5rem; border-radius: 9999px; margin-top: .25rem; }
+    @media(max-width:440px){ .portal-cards{ grid-template-columns:1fr; } .hero h1{ font-size:1.8rem; } }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div style="font-size:3.5rem; margin-bottom:.75rem;">🏠</div>
+    <h1>Hostel Feedback System</h1>
+    <p>Submit and track hostel complaints. Wardens resolve issues faster.</p>
+    <div class="portal-cards">
+      <a href="/student/login.html" class="portal-card">
+        <div class="icon">🎓</div>
+        <h2>Student Portal</h2>
+        <p>Login or register to submit and track your complaints</p>
+        <span class="badge-label">Student / Register</span>
+      </a>
+      <a href="/warden/login.html" class="portal-card">
+        <div class="icon">🛡️</div>
+        <h2>Warden Portal</h2>
+        <p>Manage complaints, view students, update statuses</p>
+        <span class="badge-label">admin / admin123</span>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

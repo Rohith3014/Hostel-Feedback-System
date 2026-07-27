@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Complaints — Hostel Feedback System</title>
+  <link rel="stylesheet" href="/css/main.css"/>
+  <style>:root{--primary:#0d9488;--sidebar-bg:#134e4a;--sidebar-text:#f0fdfa;}</style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-logo">🏠 Hostel HFS <span>Student Portal</span></div>
+      <nav class="sidebar-nav">
+        <a href="/student/dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+        <a href="/student/new-complaint.html" class="nav-item"><span class="nav-icon">✏️</span> New Complaint</a>
+        <a href="/student/complaints.html" class="nav-item active"><span class="nav-icon">📋</span> My Complaints</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="btn btn-ghost w-full" id="logout-btn" style="color:rgba(240,253,250,.7);">⬅ Logout</button>
+      </div>
+    </aside>
+    <div class="main-content">
+      <div class="topbar">
+        <span style="font-weight:600;">My Complaints</span>
+        <a href="/student/new-complaint.html" class="btn btn-sm btn-primary" style="background:var(--student-primary)">+ New Complaint</a>
+      </div>
+      <div class="page-content">
+        <div id="alert-area"></div>
+        <div class="filter-bar">
+          <select id="status-filter">
+            <option value="">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+        </div>
+        <div class="card">
+          <div id="complaints-body">
+            <div style="padding:2rem;text-align:center"><span class="spinner spinner-dark"></span></div>
+          </div>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    let page = 1;
+
+    async function init() {
+      const user = await requireStudent();
+      if (!user) return;
+      load();
+    }
+
+    async function load() {
+      const status = document.getElementById("status-filter").value;
+      const params = new URLSearchParams({ page, limit: 20 });
+      if (status) params.set("status", status);
+
+      try {
+        const data = await API.get("/api/complaints?" + params);
+        renderTable(data);
+      } catch (err) {
+        showAlert(document.getElementById("alert-area"), err.message);
+      }
+    }
+
+    function renderTable(data) {
+      const el = document.getElementById("complaints-body");
+      if (!data.complaints.length) {
+        el.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>No complaints found</p></div>`;
+        document.getElementById("pagination").innerHTML = "";
+        return;
+      }
+      el.innerHTML = `
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>#</th><th>Category</th><th>Description</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody>
+              ${data.complaints.map(c => `
+                <tr class="clickable-row" onclick="location.href='/student/complaint-detail.html?id=${c.id}'">
+                  <td>${c.id}</td><td>${c.category}</td>
+                  <td class="truncate" style="max-width:240px">${c.description}</td>
+                  <td>${statusBadge(c.status)}</td>
+                  <td class="text-sm text-muted">${formatDate(c.created_at)}</td>
+                </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>`;
+
+      const pages = Math.ceil(data.total / data.limit);
+      const pg = document.getElementById("pagination");
+      if (pages <= 1) { pg.innerHTML = ""; return; }
+      pg.innerHTML = `
+        <button class="btn btn-sm btn-secondary" ${page <= 1 ? "disabled" : ""} onclick="changePage(${page-1})">← Prev</button>
+        <span class="page-info">Page ${page} of ${pages}</span>
+        <button class="btn btn-sm btn-secondary" ${page >= pages ? "disabled" : ""} onclick="changePage(${page+1})">Next →</button>`;
+    }
+
+    function changePage(p) { page = p; load(); }
+
+    document.getElementById("status-filter").addEventListener("change", () => { page = 1; load(); });
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      await API.post("/api/auth/logout");
+      window.location.href = "/student/login.html";
+    });
+
+    init();
+  </script>
+</body>
+</html>

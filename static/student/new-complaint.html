@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>New Complaint — Hostel Feedback System</title>
+  <link rel="stylesheet" href="/css/main.css"/>
+  <style>:root{--primary:#0d9488;--sidebar-bg:#134e4a;--sidebar-text:#f0fdfa;}</style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-logo">🏠 Hostel HFS <span>Student Portal</span></div>
+      <nav class="sidebar-nav">
+        <a href="/student/dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+        <a href="/student/new-complaint.html" class="nav-item active"><span class="nav-icon">✏️</span> New Complaint</a>
+        <a href="/student/complaints.html" class="nav-item"><span class="nav-icon">📋</span> My Complaints</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="btn btn-ghost w-full" id="logout-btn" style="color:rgba(240,253,250,.7);">⬅ Logout</button>
+      </div>
+    </aside>
+    <div class="main-content">
+      <div class="topbar">
+        <span style="font-weight:600;">Submit New Complaint</span>
+      </div>
+      <div class="page-content">
+        <div style="max-width:560px">
+          <div id="alert-area"></div>
+          <div class="card">
+            <div class="card-header">Complaint Details</div>
+            <div class="card-body">
+              <form id="complaint-form">
+                <div class="form-group">
+                  <label for="category">Category</label>
+                  <select id="category" required>
+                    <option value="">Select a category…</option>
+                    <option value="Maintenance">🔧 Maintenance</option>
+                    <option value="Cleanliness">🧹 Cleanliness</option>
+                    <option value="Food">🍽️ Food / Mess</option>
+                    <option value="Electrical">💡 Electrical</option>
+                    <option value="Plumbing">🚿 Plumbing</option>
+                    <option value="Security">🔒 Security</option>
+                    <option value="Internet">🌐 Internet / Wi-Fi</option>
+                    <option value="Noise">🔊 Noise</option>
+                    <option value="Other">📌 Other</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="description">Description</label>
+                  <textarea id="description" placeholder="Describe your complaint in detail…" required minlength="10" rows="6"></textarea>
+                </div>
+                <div style="display:flex;gap:.75rem;">
+                  <button type="button" class="btn btn-secondary" onclick="history.back()">Cancel</button>
+                  <button type="submit" class="btn btn-primary" id="submit-btn" style="background:var(--student-primary);flex:1;">
+                    Submit Complaint
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    requireStudent();
+
+    document.getElementById("complaint-form").addEventListener("submit", async e => {
+      e.preventDefault();
+      const btn = document.getElementById("submit-btn");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Submitting…';
+
+      try {
+        const complaint = await API.post("/api/complaints", {
+          category:    document.getElementById("category").value,
+          description: document.getElementById("description").value.trim(),
+        });
+        showAlert(document.getElementById("alert-area"), "Complaint submitted successfully!", "success");
+        setTimeout(() => window.location.href = `/student/complaint-detail.html?id=${complaint.id}`, 1200);
+      } catch (err) {
+        showAlert(document.getElementById("alert-area"), err.message);
+        btn.disabled = false;
+        btn.textContent = "Submit Complaint";
+      }
+    });
+
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      await API.post("/api/auth/logout");
+      window.location.href = "/student/login.html";
+    });
+  </script>
+</body>
+</html>

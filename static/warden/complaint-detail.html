@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Complaint Detail — Warden Portal</title>
+  <link rel="stylesheet" href="/css/main.css"/>
+  <style>
+    :root{--primary:#4f46e5;--sidebar-bg:#1e1b4b;--sidebar-text:#e0e7ff;}
+    .detail-label{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:.2rem;}
+    .detail-value{font-weight:500;}
+    .info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:1.25rem;}
+    .student-card{background:var(--student-light,#f0fdfa);border:1px solid #99f6e4;border-radius:var(--radius);padding:1rem;}
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-logo">🏠 Hostel HFS <span>Warden Portal</span></div>
+      <nav class="sidebar-nav">
+        <a href="/warden/dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+        <a href="/warden/complaints.html" class="nav-item active"><span class="nav-icon">📋</span> Complaints</a>
+        <a href="/warden/students.html" class="nav-item"><span class="nav-icon">🎓</span> Students</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="btn btn-ghost w-full" id="logout-btn" style="color:rgba(224,231,255,.7);">⬅ Logout</button>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <div class="topbar">
+        <a href="/warden/complaints.html" style="color:var(--text-muted);font-size:.9rem;">← Back to complaints</a>
+        <div id="header-status"></div>
+      </div>
+      <div class="page-content">
+        <div id="alert-area"></div>
+        <div style="max-width:700px" id="detail-container">
+          <div style="padding:3rem;text-align:center"><span class="spinner spinner-dark"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    let complaint;
+
+    async function init() {
+      const user = await requireAdmin();
+      if (!user) return;
+
+      const id = new URLSearchParams(location.search).get("id");
+      if (!id) { window.location.href = "/warden/complaints.html"; return; }
+
+      try {
+        complaint = await API.get(`/api/complaints/${id}`);
+        render(complaint);
+      } catch (err) {
+        document.getElementById("detail-container").innerHTML =
+          `<div class="alert alert-error">${err.message}</div>`;
+      }
+    }
+
+    function render(c) {
+      document.getElementById("header-status").innerHTML = statusBadge(c.status);
+      document.getElementById("detail-container").innerHTML = `
+        <!-- Student info -->
+        <div class="student-card mb-4">
+          <div class="detail-label" style="margin-bottom:.6rem;">Student Information</div>
+          <div class="info-grid">
+            <div><div class="detail-label">Name</div><div class="detail-value">${c.student_name}</div></div>
+            <div><div class="detail-label">USN</div><div class="detail-value">${c.usn}</div></div>
+            <div><div class="detail-label">Room</div><div class="detail-value">${c.room_number}</div></div>
+            <div><div class="detail-label">Email</div><div class="detail-value"><a href="mailto:${c.email}" style="color:#0d9488">${c.email}</a></div></div>
+            ${c.phone ? `<div><div class="detail-label">Phone</div><div class="detail-value">${c.phone}</div></div>` : ""}
+          </div>
+        </div>
+
+        <!-- Complaint details -->
+        <div class="card mb-4">
+          <div class="card-header">Complaint #${c.id} — ${c.category}</div>
+          <div class="card-body">
+            <div class="info-grid">
+              <div><div class="detail-label">Submitted</div><div class="detail-value">${formatDate(c.created_at)}</div></div>
+              <div><div class="detail-label">Last Updated</div><div class="detail-value">${formatDate(c.updated_at)}</div></div>
+              <div><div class="detail-label">Current Status</div><div class="detail-value">${statusBadge(c.status)}</div></div>
+            </div>
+            <div style="margin-top:1rem;">
+              <div class="detail-label">Description</div>
+              <p style="margin-top:.4rem;line-height:1.75;">${c.description}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Update status -->
+        <div class="card">
+          <div class="card-header">Update Status</div>
+          <div class="card-body">
+            <div id="update-alert"></div>
+            <div class="form-group">
+              <label for="new-status">New Status</label>
+              <select id="new-status">
+                <option value="Pending"     ${c.status==="Pending"     ?"selected":""}>Pending</option>
+                <option value="In Progress" ${c.status==="In Progress" ?"selected":""}>In Progress</option>
+                <option value="Resolved"    ${c.status==="Resolved"    ?"selected":""}>Resolved</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="notes">Warden Notes (optional)</label>
+              <textarea id="notes" placeholder="Add notes for the student…" rows="3">${c.warden_notes || ""}</textarea>
+            </div>
+            <button class="btn btn-primary" id="update-btn" style="background:#4f46e5">Save Changes</button>
+          </div>
+        </div>`;
+
+      document.getElementById("update-btn").addEventListener("click", updateStatus);
+    }
+
+    async function updateStatus() {
+      const btn = document.getElementById("update-btn");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Saving…';
+
+      try {
+        const updated = await API.patch(`/api/complaints/${complaint.id}/status`, {
+          status:       document.getElementById("new-status").value,
+          warden_notes: document.getElementById("notes").value.trim(),
+        });
+        complaint = updated;
+        showAlert(document.getElementById("update-alert"), "Status updated successfully!", "success");
+        document.getElementById("header-status").innerHTML = statusBadge(updated.status);
+      } catch (err) {
+        showAlert(document.getElementById("update-alert"), err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Save Changes";
+      }
+    }
+
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      await API.post("/api/auth/admin/logout");
+      window.location.href = "/warden/login.html";
+    });
+
+    init();
+  </script>
+</body>
+</html>
