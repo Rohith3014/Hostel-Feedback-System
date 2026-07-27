@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🏠 Hostel Feedback System
 
 A complete hostel complaint management system built with **Python (Flask) + HTML + CSS + JavaScript**.  
@@ -111,3 +112,7 @@ Double-click **`run.bat`** to start the server automatically.
 ## Mac / Linux Users
 
 Run `./run.sh` in the terminal (first time: `chmod +x run.sh && ./run.sh`).
+=======
+# Hostel-Feedback-System
+impact boys and girsl hostel
+>>>>>>> c88000124594039a460c2deffd01781fe58a9cb7
